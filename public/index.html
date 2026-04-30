@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SpeedEngine Pro | Network Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #ffffff; color: #1a1a1a; }
+        .yellow-accent { background-color: #FACC15; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e7eb; box-shadow: 0 20px 40px -15px rgba(0,0,0,0.05); }
+        .progress-circle { transform: rotate(-90deg); stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 0.5s ease; }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="flex justify-between items-center px-10 py-6 max-w-7xl mx-auto w-full">
+        <div class="text-2xl font-black italic tracking-tighter">SPEED<span class="text-yellow-500">PRO.</span></div>
+        <div class="hidden md:flex space-x-8 font-bold text-sm uppercase tracking-widest text-slate-400">
+            <span>Diagnostics</span><span>Infrastructure</span><span>Jamshedpur Node</span>
+        </div>
+    </nav>
+
+    <!-- Main Hero -->
+    <main class="max-w-7xl mx-auto px-6 pt-12 pb-24 grid lg:grid-cols-2 gap-16 items-center">
+        
+        <div id="hero-text">
+            <h1 class="text-7xl font-extrabold leading-[1.1] mb-6">Analyze your <span class="text-yellow-400 underline italic">flow.</span></h1>
+            <p class="text-slate-500 text-lg mb-10 max-w-md">Professional-grade network throughput analysis with real-time packet latency monitoring.</p>
+            
+            <div class="flex gap-4" id="stat-cards">
+                <div class="bg-slate-50 p-6 rounded-3xl flex-1 border border-slate-100">
+                    <p class="text-[10px] uppercase font-black text-slate-400 mb-2">Public IP</p>
+                    <p id="ip" class="font-bold text-slate-800">---.---.---.---</p>
+                </div>
+                <div class="bg-slate-50 p-6 rounded-3xl flex-1 border border-slate-100">
+                    <p class="text-[10px] uppercase font-black text-slate-400 mb-2">Provider</p>
+                    <p id="isp" class="font-bold text-slate-800">Searching...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- The Analysis Engine -->
+        <div id="engine-card" class="glass-card rounded-[3rem] p-10 flex flex-col items-center relative overflow-hidden">
+            <div id="glow" class="absolute -top-20 -right-20 w-64 h-64 bg-yellow-200/40 rounded-full blur-3xl"></div>
+
+            <div class="flex gap-12 mb-12">
+                <!-- Download Gauge -->
+                <div class="text-center">
+                    <div class="relative w-40 h-40 flex items-center justify-center mb-4">
+                        <svg class="w-full h-full"><circle class="text-slate-100" stroke-width="8" stroke="currentColor" fill="transparent" r="70" cx="80" cy="80"/><circle id="download-ring" class="text-yellow-400 progress-circle" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="70" cx="80" cy="80"/></svg>
+                        <span id="download-val" class="absolute text-3xl font-black">0.0</span>
+                    </div>
+                    <p class="text-xs font-black uppercase text-slate-400 tracking-widest">Download Mbps</p>
+                </div>
+
+                <!-- Upload Gauge -->
+                <div class="text-center">
+                    <div class="relative w-40 h-40 flex items-center justify-center mb-4">
+                        <svg class="w-full h-full"><circle class="text-slate-100" stroke-width="8" stroke="currentColor" fill="transparent" r="70" cx="80" cy="80"/><circle id="upload-ring" class="text-slate-800 progress-circle" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="70" cx="80" cy="80"/></svg>
+                        <span id="upload-val" class="absolute text-3xl font-black text-slate-800">0.0</span>
+                    </div>
+                    <p class="text-xs font-black uppercase text-slate-400 tracking-widest">Upload Mbps</p>
+                </div>
+            </div>
+
+            <button onclick="startProTest()" id="cta" class="w-full yellow-accent text-slate-900 font-black py-6 rounded-2xl shadow-xl shadow-yellow-200 hover:scale-[1.02] transition-transform active:scale-95 text-lg">
+                RUN DIAGNOSTIC
+            </button>
+            <p id="location" class="mt-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Node: Jamshedpur, India</p>
+        </div>
+    </main>
+
+    <script>
+        // Hero Entrance
+        const tl = gsap.timeline();
+        tl.from("#hero-text h1", { duration: 1, x: -100, opacity: 0, ease: "power4.out" })
+          .from("#hero-text p", { duration: 0.8, x: -50, opacity: 0 }, "-=0.6")
+          .from("#engine-card", { duration: 1, scale: 0.8, opacity: 0, ease: "back.out(1.7)" }, "-=0.8");
+
+        async function startProTest() {
+            const btn = document.getElementById('cta');
+            const dRing = document.getElementById('download-ring');
+            const uRing = document.getElementById('upload-ring');
+            
+            btn.disabled = true;
+            btn.innerText = "CAPTURING DATA...";
+            
+            // Animation Loop while fetching
+            const pulse = gsap.to("#engine-card", { scale: 1.01, duration: 0.5, repeat: -1, yoyo: true });
+
+            try {
+                const res = await fetch('/api/speedtest');
+                const data = await res.json();
+                pulse.kill();
+                gsap.to("#engine-card", { scale: 1 });
+
+                // Counter Animations
+                animateValue("download-val", data.download_mbps);
+                animateValue("upload-val", data.upload_mbps);
+
+                // Ring Animations (440 is full circle)
+                // Normalize based on 100Mbps
+                const dOffset = 440 - (Math.min(data.download_mbps, 100) / 100 * 440);
+                const uOffset = 440 - (Math.min(data.upload_mbps, 100) / 100 * 440);
+                
+                gsap.to(dRing, { strokeDashoffset: dOffset, duration: 1.5, ease: "power2.out" });
+                gsap.to(uRing, { strokeDashoffset: uOffset, duration: 1.5, ease: "power2.out" });
+
+                document.getElementById('ip').innerText = data.ip;
+                document.getElementById('isp').innerText = data.isp;
+                document.getElementById('location').innerText = "Node: " + data.location;
+
+            } catch (e) {
+                btn.innerText = "NODE ERROR";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "RE-RUN ANALYSIS";
+            }
+        }
+
+        function animateValue(id, target) {
+            const obj = { val: 0 };
+            gsap.to(obj, {
+                val: target,
+                duration: 2,
+                ease: "power3.out",
+                onUpdate: () => document.getElementById(id).innerText = obj.val.toFixed(1)
+            });
+        }
+    </script>
+</body>
+</html>
