@@ -44,7 +44,4 @@ Standard `io.Copy` measures raw data bits. However, your internet speed involves
     "download_mbps": 150.42,
     "upload_mbps": 147.41
 }
-```[cite: 1, 2]
 
-## ⚖️ License
-MIT License. Use freely for personal or professional projects[cite: 1].
